@@ -1,14 +1,16 @@
 <script>
-	export let toolColor;
+	// Store
+	import { canvasObj } from "./stores.js";
+	
 	let colors =["black", "white", "blue", "red", "green", "yellow"]
 	function changeToolColorTo(color){
-		toolColor = color;
+		canvasObj.setToolColor(color)
 	}
 </script>
 
 <div id="colorPalette">
 	{#each colors as color}
-		<div class={`colorBtnWrapper ${toolColor === color ? "selected" : "unselected"}`}>
+		<div class={`colorBtnWrapper ${$canvasObj.toolColor === color ? "selected" : "unselected"}`}>
 			<button style="background-color: {color};" on:click={() => changeToolColorTo(color)}></button>
 		</div>
 	{/each}

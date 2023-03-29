@@ -1,7 +1,8 @@
 <script>
-	export let pixelMatrix;
-	export let canvasHeight;
-	export let canvasWidth;
+	// Store
+	import { canvasObj } from "./stores.js";
+			
+	// Local variables
 	let isDimensionsLocked = true;
 	const MIN_INPUT = 1;
 	const MAX_INPUT = 100;
@@ -13,49 +14,39 @@
 	function validateClear(){
 		const isClearing = confirm("Clear the canvas?")
 		if(isClearing){
-			generatePixelMatrix();
+			canvasObj.generateCanvas();
 		}
 	}
 	
-	function generatePixelMatrix(){
-			const newPixelMatrix = new Array(canvasHeight);
-			for(let h = 0; h < canvasHeight; h++){
-				newPixelMatrix[h] = (new Array(canvasWidth));
-				for(let w = 0; w < canvasWidth; w++){
-					newPixelMatrix[h][w] = {
-						x: w, 
-						y: h,
-						color: "white"
-					}
-				} 
-			}
-			pixelMatrix = newPixelMatrix
-	}
-	generatePixelMatrix()
+	$: canvasObj !== null ? canvasObj.generateCanvas() : null
 </script>
-
-<div id="canvasGeneration">
+{#if $canvasObj === undefined}
+	<div>
+		 Loading
+	</div>
+{:else}
+	<div id="canvasGeneration">
 	<div id="heightInputWrapper">
 		<span>Height</span>
 		<input 
 			disabled={isDimensionsLocked} 
-			bind:value={canvasHeight} 
+			bind:value={$canvasObj.height} 
 			type=range 
 			min={MIN_INPUT} 
-			max={MAX_INPUT} 
-			on:change={generatePixelMatrix}>
-		<span class="dimensionText">{canvasHeight}</span>
+			max={MAX_INPUT}
+			on:change={() => canvasObj.generateCanvas()}>
+		<span class="dimensionText">{$canvasObj.height}</span>
 	</div>
 	<div id="widthInputWrapper">
 		<span>Width</span>
 		<input 
 			disabled={isDimensionsLocked} 
-			bind:value={canvasWidth} 
+			bind:value={$canvasObj.width} 
 			type=range 
 			min={MIN_INPUT} 
 			max={MAX_INPUT} 
-			on:change={generatePixelMatrix}>
-		<span class="dimensionText">{canvasWidth}</span>
+			on:change={() => canvasObj.generateCanvas()}>
+		<span class="dimensionText">{$canvasObj.width}</span>
 	</div>
 	<button id="lockBtn" on:click={toggleLock}>
 		{isDimensionsLocked ? "Unlock" : "Lock"}
@@ -64,6 +55,7 @@
 		Clear
 	</button>
 </div>
+{/if}
 
 <style>
 	#canvasGeneration{
