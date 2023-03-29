@@ -1,5 +1,5 @@
 <script>
-	export let toolType;
+	import { canvasObj } from "./stores.js"
 	
 	let toolOptions = [
 		{
@@ -23,9 +23,9 @@
 
 <div id="toolContainer">
 	<label id="toolSelectorLabel" for="toolSelector">Tool: </label>
-	<select id="toolSelector" bind:value={toolType}>
+	<select id="toolSelector" bind:value={$canvasObj.toolType}>
 		{#each toolOptions as {tool, text}}
-		<option value={tool}>{text}</option>
+			<option value={tool}>{text}</option>
 		{/each}
 	</select>
 </div>

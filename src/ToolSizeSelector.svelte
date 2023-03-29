@@ -1,5 +1,5 @@
 <script>
-	export let toolSize;
+	import { canvasObj } from "./stores.js"
 	
 	let sizeOptions = [
 		{
@@ -19,9 +19,9 @@
 
 <div id="sizeContainer">
 	<label id="sizeSelectorLabel" for="sizeSelector">Size: </label>
-	<select id="sizeSelector" bind:value={toolSize}>
+	<select id="sizeSelector" bind:value={$canvasObj.toolSize}>
 		{#each sizeOptions as {size, text}}
-		<option value={size}>{text}</option>
+			<option value={size}>{text}</option>
 		{/each}	
 	</select>
 </div>

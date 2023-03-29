@@ -1,10 +1,5 @@
 <script>
-	export let pixelMatrix;
-	export let toolColor;
-	export let toolSize;
-	export let toolType;
-	export let canvasWidth;
-	export let canvasHeight;
+	import { canvasObj } from "./stores.js"
 	let currentX;
 	let currentY;
 	let isDraggingMouse = false;
@@ -15,24 +10,25 @@
 	
 	// ========== FILL FUNCTIONS (start) ==========
 	// Recursive function called within floodFillPixels
-	function floodFillUtil(x, y, prevColor, newColor){
+	function recursiveFillUtil(x, y, prevColor, coordinatesToFill, tempMatrix){
 		// Base cases
-		if (x < 0 || x >= pixelMatrix[0].length || y < 0 || y >= pixelMatrix.length) return;
-		if (pixelMatrix[y][x].color != prevColor) return;
-
-		// Replace the color at (x, y)
-		pixelMatrix[y][x].color = newColor;
-
-		floodFillUtil(x + 1, y, prevColor, newColor); // Recur for right
-		floodFillUtil(x - 1, y, prevColor, newColor);	// Recur for left
-		floodFillUtil(x, y + 1, prevColor, newColor); // Recur for below
-		floodFillUtil(x, y - 1, prevColor, newColor); // Recur for above
+		if (x >= 0 && x < ($canvasObj.width) && y >= 0 && y < ($canvasObj.height) && tempMatrix[y][x].color === prevColor){
+			coordinatesToFill.push([x,y])	// Push current coordinates to array for printing
+			tempMatrix[y][x].color = $canvasObj.toolColor
+			recursiveFillUtil(x + 1, y, prevColor, coordinatesToFill, tempMatrix);	// Recur for right
+			recursiveFillUtil(x - 1, y, prevColor, coordinatesToFill, tempMatrix);	// Recur for left
+			recursiveFillUtil(x, y + 1, prevColor, coordinatesToFill, tempMatrix);	// Recur for below
+			recursiveFillUtil(x, y - 1, prevColor, coordinatesToFill, tempMatrix);	// Recur for above
+		}
 	}
  
-	function floodFillPixels(x, y, newColor) {
-		let prevColor = pixelMatrix[y][x].color;
-		if (prevColor == newColor) return;
-		floodFillUtil(x, y, prevColor, newColor);
+	function generateFillCoords(x, y) {
+		let prevColor = $canvasObj.matrix[y][x].color;
+		if (prevColor == $canvasObj.toolColor) return;
+		const coordinatesToFill = []
+		const tempMatrix = JSON.parse(JSON.stringify($canvasObj.matrix))
+		recursiveFillUtil(x, y, prevColor, coordinatesToFill, tempMatrix);
+		return coordinatesToFill;
 	}
 		
 	// ========== LINE FUNCTION (start) ==========
@@ -64,7 +60,9 @@
         if ((pointX == endX) && (pointY == endY)) { break } // doesn't include the end point
         
         points.push([pointX, pointY])
-    }    
+    }
+		points.push([endX, endY]) // Push end of line
+		
 		// Add pixels based on size
 		points.forEach(point => generatePixelsBySize(point[0], point[1]).forEach(pixel => points.push(pixel)))
 		
@@ -75,8 +73,8 @@
 	// ========== SIZE FUNCTION (start) ==========
 	function generatePixelsBySize(x, y){
 		const pixelArr = []
-		for(let a = 0; a <= toolSize; a++){
-			for(let b = 0; b <= toolSize; b++){
+		for(let a = 0; a <= $canvasObj.toolSize; a++){
+			for(let b = 0; b <= $canvasObj.toolSize; b++){
       	if(a === 0 && b === 0){
         	pixelArr.push([x, y])
         }
@@ -149,75 +147,94 @@
     return new Set([...boxArr])
 	}
 	
-	// ========== BOX FUNCTIONS (end) ==========
-	
-	function paintPixels(pixelArr){
-		pixelArr.forEach(pixel => {
-			// Check that pixel is within the canvas borders
-			if(pixel[0] >= 0 && pixel[0] < canvasWidth && pixel[1] >= 0 && pixel[1] < canvasHeight){
-				colorPixel(pixel[0], pixel[1])
-			}
-		})
-	}
-	
 	function mouseHandler(e, x, y){
 		currentX = x;
 		currentY = y;
 		// Special case #1 -> line: cannot utilize drag
-		if (toolType === "line"){
+		if ($canvasObj.toolType === "line"){
 			if(e.type === 'mousedown' && x !== undefined && y !== undefined){
 				// 1st Click: Set start of line
 				if(lineStart === null){
 					lineStart = [x, y];
-					paintPixels(generatePixelsBySize(x, y))
-					matrixCopy = JSON.stringify(pixelMatrix)	// Deep copy matrix to temp variable (used to aid ghost line gen)
+					const coordinates = generatePixelsBySize(x, y); // Coordinates for line start (plus any pixels for size)
+					canvasObj.paintCoordinates(coordinates)					// Paint line start
+					matrixCopy = JSON.stringify($canvasObj.matrix)	// Deep copy matrix to temp variable (used to aid ghost line gen)
 				}
 				// 2nd Click: Set end of line (and points between)
 				else {
-					paintPixels(generateBresenhamLine(lineStart[0], lineStart[1], x, y))	// Color between line ends
- 					colorPixel(x, y);	// Paint line end
+					const coordinates = generateBresenhamLine(lineStart[0], lineStart[1], x, y)
 					lineStart = null;
 					matrixCopy = null;
+					canvasObj.paintCoordinates(coordinates);
 				}
 			}
+			// Ghost line (after 1st click but before finishing click)
 			else if(lineStart !== null && x !== undefined && y !== undefined){
-					pixelMatrix = JSON.parse(matrixCopy)																 	// 1. Wipe out prior changes
-					paintPixels(generateBresenhamLine(lineStart[0], lineStart[1], x, y))	// 2. Regenerate temp ghost line
-					colorPixel(x, y) 																											// 3. Paint temp line end
+					// 1. Get original matrix to add ghost line to
+					const tempMatrix = JSON.parse(matrixCopy);
+				
+					// 2. Generate ghost line	
+					const coordinates = generateBresenhamLine(lineStart[0], lineStart[1], x, y);
+
+					// 3. Apply ghost line to tempMatrix
+					coordinates.forEach((pixel) => {
+						const [x, y] = pixel;
+						if(x >= 0 && x < $canvasObj.width && y >= 0 && y < $canvasObj.height){
+							tempMatrix[pixel[1]][pixel[0]].color = $canvasObj.toolColor
+						}
+					})
+
+					// 4. Replace store matrix
+					$canvasObj.matrix = tempMatrix;
 				}
 		}
-		// Special case #2 -> line: cannot utilize drag
-		else if (toolType === "box"){
+		// Special case #2 -> box: cannot utilize drag
+		else if ($canvasObj.toolType === "box"){
 			if(e.type === 'mousedown' && x !== undefined && y !== undefined){
 				// 1st Click: Set 1st corner of box
 				if(boxStart === null){
 					boxStart = [x, y];
-					//paintPixels(generatePixelsBySize(x, y))
-					matrixCopy = JSON.stringify(pixelMatrix)	// Deep copy matrix to temp variable (used to aid ghost line gen)
+					const coordinates = generatePixelsBySize(x, y); // Coordinates for box start (plus any pixels for size)
+					canvasObj.paintCoordinates(coordinates)		// Paint box start
+					matrixCopy = JSON.stringify($canvasObj.matrix)	// Deep copy matrix to temp variable (used to aid ghost line gen)
 				}
 				// 2nd Click: Set 2nd corner of box (and points between)
-				else {
-					paintPixels(generateBox(x, y))	// Color between line ends
+				else {					
+					const coordinates = generateBox(x, y)
 					boxStart = null;
 					matrixCopy = null;
+					canvasObj.paintCoordinates(coordinates);
 				}
 			}
-			else if(boxStart !== null && x !== undefined && y !== undefined){
-					pixelMatrix = JSON.parse(matrixCopy)	// 1. Wipe out prior changes
-					paintPixels(generateBox(x, y))				// 2. Regenerate temp ghost box
+			else if(boxStart !== null && x !== undefined && y !== undefined){				
+					// 1. Get original matrix to add ghost line to
+					const tempMatrix = JSON.parse(matrixCopy);
+				
+					// 2. Generate ghost box	
+					const coordinates = generateBox(x, y);
+
+					// 3. Apply ghost box to tempMatrix
+					coordinates.forEach((pixel) => {
+						const [x, y] = pixel;
+						if(x >= 0 && x < $canvasObj.width && y >= 0 && y < $canvasObj.height){
+							tempMatrix[pixel[1]][pixel[0]].color = $canvasObj.toolColor
+						}
+					})
+
+					// 4. Replace store matrix
+					$canvasObj.matrix = tempMatrix;
 				}
 		}
-		else if (isDraggingMouse || e.type === 'mousedown' && x !== undefined && y !== undefined) {
-			switch(toolType){
-				case "paint": return paintPixels(generatePixelsBySize(x,y))
-				case "fill": return floodFillPixels(x,y, toolColor)
-				default: paintPixels(generatePixelsBySize(x,y))
-			}
+		// Special case #3 -> fill: do not utilize drag
+		else if ($canvasObj.toolType === "fill" && e.type === 'mousedown' && x !== undefined && y !== undefined){
+			const coords = generateFillCoords(x,y)
+			canvasObj.paintCoordinates(coords)
 		}
-	}
-	
-	function colorPixel(x, y){
-		pixelMatrix[y][x].color = toolColor;
+
+		// Base case: normal paint
+		else if($canvasObj.toolType === "paint" && x !== undefined && y !== undefined && isDraggingMouse || e.type === 'mousedown' ){
+			canvasObj.paintCoordinates(generatePixelsBySize(x,y))
+		}
 	}
 </script>
 
@@ -229,7 +246,7 @@
 	on:mousedown="{() => isDraggingMouse = true}" 
 	on:mouseup="{() => isDraggingMouse = false}"
 	on:mouseleave="{() => isDraggingMouse = false}">
-	{#each pixelMatrix as pixelRow}
+	{#each $canvasObj.matrix as pixelRow}
 	<div class="pixelRow">				
 		{#each pixelRow as {x, y, color}}
 		<div class="pixel" style="background-color: {color};" on:mousedown|preventDefault={(e) => mouseHandler(e, x, y)} on:mouseenter={(e) => mouseHandler(e, x, y)}></div>

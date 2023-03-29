@@ -1,4 +1,7 @@
 <script>
+	// Store
+	import { canvasObj } from "./stores.js"
+	
 	// Components
 	import CanvasGenerator from "./CanvasGenerator.svelte";
 	import ColorPalette from "./ColorPalette.svelte";
@@ -8,23 +11,17 @@
 	import Copier from "./Copier.svelte";
 
 	// Variables
-	let pixelMatrix = [];
-	let toolColor = "black";
-	let toolSize = 0;
-	let toolType = "paint";
-	let canvasHeight = 50;
-	let canvasWidth = 50;
 	let importedJSON = ""
 	
 	function copyCanvas() {
-		const canvasObj = {
-				pixelMatrix,
-				canvasHeight,
-				canvasWidth
+		const canvasFromJSON = {
+				matrix,
+				height,
+				width
 		}
 		const app = new Copier({
 			target: document.getElementById('clipboard'),
-			props: {canvasObj}
+			props: {canvasFromJSON}
 		});
 		app.$destroy();
 		alert("Canvas properties copied to clipboard")
@@ -37,12 +34,12 @@
 			return;
 		}
 
-		let canvasObj = await readJsonFile(file);
+		let canvasFromJSON = await readJsonFile(file);
 		try{
-			if(canvasObj.pixelMatrix.length === canvasObj.canvasHeight && canvasObj.pixelMatrix[0].length === canvasObj.canvasWidth){
-				pixelMatrix = canvasObj.pixelMatrix;
-				canvasWidth = canvasObj.canvasWidth;
-				canvasHeight = canvasObj.canvasHeight;
+			if(canvasFromJSON.pixelMatrix.length === canvasFromJSON.height && canvasFromJSON.pixelMatrix[0].length === canvasFromJSON.width){
+				pixelMatrix = canvasFromJSON.pixelMatrix;
+				canvasWidth = canvasFromJSON.canvasWidth;
+				canvasHeight = canvasFromJSON.canvasHeight;
 			}
 			else{
 				alert("Improperly formatted JSON")
@@ -64,23 +61,17 @@
 </script>
 
 <main>
-	<CanvasGenerator bind:pixelMatrix={pixelMatrix} bind:canvasHeight={canvasHeight} bind:canvasWidth={canvasWidth}/>
+	<CanvasGenerator/>
 	
-	{#if pixelMatrix.length > 0}
+	{#if $canvasObj.matrix.length > 0}
 		<div class="container">
-			<ColorPalette bind:toolColor={toolColor} />
+			<ColorPalette/>
 			<div id="canvasTools">
-					<ToolSizeSelector bind:toolSize={toolSize}/>
-					<ToolTypeSelector bind:toolType={toolType}/>
+					<ToolSizeSelector/>
+					<ToolTypeSelector/>
 			</div>
 		</div>
-		<PixelCanvas 
-			pixelMatrix={pixelMatrix} 
-			toolColor={toolColor} 
-			toolSize={toolSize}
-			toolType={toolType}
-			canvasWidth={canvasWidth} 
-			canvasHeight={canvasHeight}/>
+		<PixelCanvas/>
 	
 		<div id="shareSection">
 			<button id="copyBtn" on:click={copyCanvas}>Copy Canvas</button>
