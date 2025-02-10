@@ -1,10 +1,12 @@
 <script>
 	import { onMount } from 'svelte';
 
-	export let canvasObj;
+	export let matrix;
+    export let width;
+    export let height; 
 	let textarea;
 	
-	let canvasJSON = JSON.stringify(canvasObj);
+	let canvasJSON = JSON.stringify({matrix, width, height});
 	
 	onMount(() => {
 		textarea.select();

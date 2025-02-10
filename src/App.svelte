@@ -9,21 +9,13 @@
 	import ToolTypeSelector from "./ToolTypeSelector.svelte";
 	import PixelCanvas from "./PixelCanvas.svelte";
 	import Copier from "./Copier.svelte";
-
-	// Variables
-	let importedJSON = ""
 	
 	function copyCanvas() {
-		const canvasFromJSON = {
-				matrix,
-				height,
-				width
-		}
-		const app = new Copier({
+		const copier = new Copier({
 			target: document.getElementById('clipboard'),
-			props: {canvasFromJSON}
+			props: {matrix: $canvasObj.matrix, width: $canvasObj.width, height: $canvasObj.height}
 		});
-		app.$destroy();
+		copier.$destroy();
 		alert("Canvas properties copied to clipboard")
 	}
 	
@@ -36,10 +28,10 @@
 
 		let canvasFromJSON = await readJsonFile(file);
 		try{
-			if(canvasFromJSON.pixelMatrix.length === canvasFromJSON.height && canvasFromJSON.pixelMatrix[0].length === canvasFromJSON.width){
-				pixelMatrix = canvasFromJSON.pixelMatrix;
-				canvasWidth = canvasFromJSON.canvasWidth;
-				canvasHeight = canvasFromJSON.canvasHeight;
+			if(canvasFromJSON.matrix.length === canvasFromJSON.height && canvasFromJSON.matrix[0].length === canvasFromJSON.width){
+				$canvasObj.matrix = canvasFromJSON.matrix;
+				$canvasObj.width = canvasFromJSON.width;
+				$canvasObj.height = canvasFromJSON.height;
 			}
 			else{
 				alert("Improperly formatted JSON")
@@ -67,8 +59,8 @@
 		<div class="container">
 			<ColorPalette/>
 			<div id="canvasTools">
-					<ToolSizeSelector/>
-					<ToolTypeSelector/>
+                <ToolSizeSelector/>
+                <ToolTypeSelector/>
 			</div>
 		</div>
 		<PixelCanvas/>

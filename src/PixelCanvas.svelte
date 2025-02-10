@@ -238,7 +238,7 @@
 	}
 </script>
 
-<!-- 	Display current position of user's mouse within canvas -->
+<!-- Display current position of user's mouse within canvas -->
 <span>Current Mouse Position: {`[${currentX}, ${currentY}]`}</span>
 
 <!-- Start "drag" if mouse clicks while inside canvas area. Stop "drag" if mouse releases or exits the canvas area  -->
@@ -247,11 +247,11 @@
 	on:mouseup="{() => isDraggingMouse = false}"
 	on:mouseleave="{() => isDraggingMouse = false}">
 	{#each $canvasObj.matrix as pixelRow}
-	<div class="pixelRow">				
-		{#each pixelRow as {x, y, color}}
-		<div class="pixel" style="background-color: {color};" on:mousedown|preventDefault={(e) => mouseHandler(e, x, y)} on:mouseenter={(e) => mouseHandler(e, x, y)}></div>
-		{/each}
-	</div>
+        <div class="pixelRow">				
+            {#each pixelRow as {x, y, color}}
+                <div class="pixel" style="background-color: {color};" on:mousedown|preventDefault={(e) => mouseHandler(e, x, y)} on:mouseenter={(e) => mouseHandler(e, x, y)}></div>
+            {/each}
+        </div>
 	{/each}
 </div>
 
